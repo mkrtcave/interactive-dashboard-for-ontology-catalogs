@@ -1,9 +1,9 @@
 # Dashboard for biological ontologies
 
-The goal of this project is to create an interactive dashboard over OBO Foundry ontologies. This dahsboard is being developed to display information about ontologies such as various problems, statistics.
+The goal of this project is to create an interactive dashboard over OBO Foundry ontologies. This dahsboard is being developed to display information about ontologies such as various errors, metrics.
 OBO Foundry has its own tool for computing number of metrics about a ontology, such as entity and axiom counts, qualitative information and more complex metrics aimed at informing ontology developers, or this tool can report on various issues that may provide problems for users such as classes with multiple labels.
 
-The [RDF Indexer](https://github.com/datagov-cz/dashboard-indexer) tool was taken as a basis, which was expanded by our plugin for ontology processing and GraphDB for ontology data storing.
+The [RDF Indexer](https://github.com/datagov-cz/dashboard-indexer) tool was taken as a basis, which was expanded by our ontology dashboard plugin for ontology processing and GraphDB for ontology data storing. This architecture has also been expanded with the Ontology Metric service, which is independent.
 
 # Installation
 
@@ -14,23 +14,24 @@ The [RDF Indexer](https://github.com/datagov-cz/dashboard-indexer) tool was take
 Create `.env` file in root directory of the project (same directory as "*docker-compose.yml*"). Insert folowing (**only
 change variables in double asterisks `**var-name**`**):
 
+    # OntologyDashboard
     # Name of compose cluster of containers
-    COMPOSE_PROJECT_NAME=**cluster-name**
-    KIBANA_SYSTEM_PASS=***kibana-system-pass***
+    COMPOSE_PROJECT_NAME=cluster-name
+    KIBANA_SYSTEM_PASS=***pass***
     # Kibana user credentials for indexer
     INDEXER_USERNAME=***indexer***
     INDEXER_PASSWORD=***indexer***
     # Kibana user credentials for public account (auto-sign-in user)
     PUBLIC_USERNAME=public
     PUBLIC_PASSWORD=public
-    # Ports
+    # Ports 
     ELASTICSEARCH_PORT=9200
     KIBANA_PORT=5601
     # Kibana port with auto-sign-in (for public display)
     PUBLIC_KIBANA_PORT=6601
     INDEXER_PORT=8080
     GRAPHDB_PORT=7200
-    
+    ONTOLOGY_METRICS_PORT=8081
     # Additional settings
     DASHBOARD_PLUGIN=true
     USE_BASE_VARIANT=true
@@ -41,6 +42,15 @@ change variables in double asterisks `**var-name**`**):
     ELASTIC_STACK_VERSION=7.16.0
     NGINX_VERSION=1.21.4
     CERTS_DIR=/usr/share/elasticsearch/config/certificates
+
+    #OntologyMetrics
+    THREADPOOL_SIZE=1
+    GRAPHDB_REPOSITORY=http://host.docker.internal:7200/repositories/ontologiesmetrics
+    ELASTICSEARCH_HOSTNAME=host.docker.internal
+    ELASTICSEARCH_SCHEME=https
+    #name of index in which data for dashboard will be stored
+    ELASTICSEARCH_INDEX=ontologiesmetrics
+    ELASTICSEARCH_APIKEY=***apikey***
 
 ### 2. Create docker containers
 
@@ -85,6 +95,19 @@ Login to Kibana (default https://localhost:5601).
 
 - Username: elastic
 - Password: [saved_elastic_pass]
+
+#### Create Elastic API key 
+
+Go to Menu -> Stack Management -> Security -> API keys and generate Elastic API key. 
+
+Edit `.env` by changing variable ELASTICSEARCH_APIKEY in **triple asterisks**
+
+Recreate ontology metrics dashboard app.
+
+	docker-compose -f docker-compose-auth.yml up -d --build
+
+
+### Create superuser
 
 Create you own *user* with `superuser` role in `side menu > Stack Management > Users (under Security)` and
 click `Create user`. Then relogin with your new superuser.
@@ -134,3 +157,17 @@ Create new role (in `side menu > Stack Management > Roles (under Security)` and 
 4. Click "*Create role*"
 
 Create user with credentials from `.env` for indexer (`PUBLIC_USERNAME` and `PUBLIC_PASSWORD`) and assign role `public`.
+
+## Importing dashboards to Kibana (OntologyMetrics)
+File /kibana/dashboards.ndjson contains predefined dashboards ready-to-import into Kibana.
+(Menu -> Stack Management -> Kibana -> Saved objects -> Import)
+These files import dashboards and index patterns into Kibana. Single ontology metrics dashboard wouldn't work with integrated searchbar.
+To insert it manually, you have to go to the dashboard itself.
+(Menu -> Dashboards -> Single ontology metrics -> Edit -> Add from library -> Ontology searchbar)
+The searchbar will then occur at the bottom of dashboard. Adjust it to your needs and then tap Save in the top right corner.
+
+## Invocation of ontology procession (OntologyMetrics)
+The system processes a catalog of OBO ontologies weekly. It exposes REST api on the specified port, with generated Swagger UI, through which procession of ontologies can be invoked.
+You can submit any web-available ontology,
+but this feature has not been properly tested and the results won't
+appear in the Kibana dashboard, but only in a named graph in GraphDB ( default http://localhost:7200).
