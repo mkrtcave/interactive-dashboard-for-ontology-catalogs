@@ -3,7 +3,7 @@
 The goal of this project is to create an interactive dashboard over OBO Foundry ontologies. This dahsboard is being developed to display information about ontologies such as various errors, metrics.
 OBO Foundry has its own tool for computing number of metrics about a ontology, such as entity and axiom counts, qualitative information and more complex metrics aimed at informing ontology developers, or this tool can report on various issues that may provide problems for users such as classes with multiple labels.
 
-The [RDF Indexer](https://github.com/datagov-cz/dashboard-indexer) tool was taken as a basis, which was expanded by our ontology dashboard plugin for ontology processing and GraphDB for ontology data storing. This architecture has also been expanded with the Ontology Metric service, which is independent.
+The [RDF Indexer](https://github.com/datagov-cz/dashboard-indexer) tool was taken as a basis, which was expanded by our ontology **Dashboard plugin** for ontology processing and GraphDB for ontology data storing. This architecture has also been expanded with the **Ontology Metric Service**, which is independent.
 
 # Installation
 
