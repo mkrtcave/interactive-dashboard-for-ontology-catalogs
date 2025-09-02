@@ -1,0 +1,102 @@
+version: "3.9"
+services:
+  es01:
+    container_name: "es01"
+    image: "docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_STACK_VERSION}"
+    ports:
+      - "${ELASTICSEARCH_PORT}:9200"    # [docker host port]:[in container port]
+    environment:
+      - node.name=es01
+      - cluster.name=es-docker-cluster
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esData:/usr/share/elasticsearch/data
+      - esConfig:/usr/share/elasticsearch/config/
+    networks:
+      - elastic
+    restart: unless-stopped
+
+  kibana:
+    container_name: "Kibana"
+    image: "docker.elastic.co/kibana/kibana:${ELASTIC_STACK_VERSION}"
+    ports:
+      - "${KIBANA_PORT}:5601"           # [docker host port]:[in container port]
+    environment:
+      ELASTICSEARCH_URL: http://es01:9200
+      ELASTICSEARCH_HOSTS: http://es01:9200
+    volumes:
+      - kibanaConfig:/usr/share/kibana/config
+    networks:
+      - elastic
+    restart: unless-stopped
+
+  indexer-server:
+    container_name: "Spring-indexer"
+    environment:
+
+      elastic_host: es01                # the elastic host ip
+
+      elastic_port: '9200'              # the elastic host port
+
+      kibana_host: kibana               # the kibana host ip
+
+      kibana_port: '5601'               # the kibana host port
+
+      dashboard_plugin: '${DASHBOARD_PLUGIN}'
+
+      max_concurrent_harvests: $INDEXER_MAX_CONCURRENT_HARVESTS     # the max number of concurrent working harvests
+
+      log_level: "info"                 # the log level (info or debug)
+
+      cache_duration_in_seconds: 10     # number of second to cache dashboard data
+
+      Xmx: '${JAVA_MAX_MEMORY}'         # maximum size of memory pool for java
+
+      Xms: '${JAVA_INIT_MEMORY}'        # initial size of memory pool for java
+
+    tty: true
+
+    ports:
+      - "${INDEXER_PORT}:8080"          # [docker host port]:[in container port]
+    volumes:
+      - indexerDB:/DB
+    networks:
+      - elastic
+#    build: .
+#    image: indexer-server
+    image: mkrtcave/indexer
+    restart: unless-stopped
+
+  graphdb:
+    image: ontotext/graphdb:latest
+    container_name: graphdb
+    ports:
+      - "7200:7200"
+    volumes:
+      - graphdb-data:/opt/graphdb/home
+    environment:
+      GDB_JAVA_OPTS: >-
+        -Xmx3g -Xms2g
+
+volumes:
+  esData:
+    driver: local
+  esConfig:
+    driver: local
+  kibanaConfig:
+    driver: local
+  indexerDB:
+    driver: local
+  graphdb:
+     driver: local
+
+networks:
+  elastic:
+#    driver: bridge
+#raDJHhGUMtKJ1xeYPPn6
