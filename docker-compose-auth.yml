@@ -4,7 +4,7 @@ services:
     container_name: "es01"
     image: "docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_STACK_VERSION}"
     ports:
-      - "${ELASTICSEARCH_PORT}:9200"    # [docker host port]:[in container port]
+      - "${ELASTICSEARCH_PORT}:9200"
     environment:
       - node.name=elasticsearch-01
       - cluster.name=es-docker-cluster
@@ -109,8 +109,6 @@ services:
       - certs:/certs
     networks:
       - elastic
-#    build: .
-#    image: indexer-server
     image: mkrtcave/indexer
     restart: unless-stopped
 
@@ -119,7 +117,7 @@ services:
     image: "nginx:${NGINX_VERSION}"
     depends_on: { "kibana": { "condition": "service_healthy" } }
     ports:
-      - "${PUBLIC_KIBANA_PORT}:6601"    # [docker host port]:[in container port]
+      - "${PUBLIC_KIBANA_PORT}:6601"
     volumes:
       - nginxConfig:/etc/nginx/conf.d/
       - nginxLog:/var/log/nginx
@@ -138,6 +136,15 @@ services:
     environment:
       GDB_JAVA_OPTS: >-
         -Xmx3g -Xms2g
+  
+  graphdb-init:
+    image: curlimages/curl
+    depends_on:
+      - graphdb
+    volumes:
+      - ./graphdb-init:/graphdb-init
+    entrypoint: [ "/bin/sh", "-c" ]
+    command: [ "sleep 10 && sh /graphdb-init/create-repo.sh" ]
 
 volumes:
   esData:
