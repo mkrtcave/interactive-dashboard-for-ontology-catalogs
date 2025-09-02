@@ -145,6 +145,28 @@ services:
       - ./graphdb-init:/graphdb-init
     entrypoint: [ "/bin/sh", "-c" ]
     command: [ "sleep 10 && sh /graphdb-init/create-repo.sh" ]
+  
+  ontologymetrics:
+    container_name: OntologyMetrics
+    image: skrisjak/ontometrics
+    ports:
+      - ${ONTOLOGY_METRICS_PORT}:8080
+    restart: on-failure
+    environment:
+      - THREADPOOL_SIZE=${THREADPOOL_SIZE}
+      - GRAPHDB_REPOSITORY=${GRAPHDB_REPOSITORY}
+      - ELASTICSEARCH_HOSTNAME=${ELASTICSEARCH_HOSTNAME}
+      - ELASTICSEARCH_SCHEME=${ELASTICSEARCH_SCHEME}
+      - ELASTICSEARCH_PORT=${ELASTICSEARCH_PORT}
+      - ELASTICSEARCH_INDEX=${ELASTICSEARCH_INDEX}
+      - ELASTICSEARCH_APIKEY=${ELASTICSEARCH_APIKEY}
+      - JAVA_MAX_HEAP_SPACE=${JAVA_MAX_MEMORY}
+    healthcheck:
+      test: curl -f http://localhost:8080/actuator/health || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
 
 volumes:
   esData:
